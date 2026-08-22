@@ -24,6 +24,24 @@ set -e
 trap 'echo ""; echo "Something failed on line $LINENO. Scroll up to see the error."; exit 1' ERR
 
 REPO_URL="https://github.com/sberl/supersid.git"
+
+# Colours, used to mark the handful of answers that are worth your attention.
+# Turned off when the output is not a terminal, or when NO_COLOR is set, so a
+# log file does not fill up with escape codes.
+if [ -t 1 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]; then
+    RED=$'\033[38;2;205;49;49m'
+    BOLD=$'\033[1m'
+    RESET=$'\033[0m'
+else
+    RED=""
+    BOLD=""
+    RESET=""
+fi
+
+# attention "text"  ->  one red line before a question that matters
+attention() {
+    echo "${RED}${BOLD}  >> $1${RESET}"
+}
 SESSION="supersid"
 
 # the three python files this script installs next to your data
@@ -152,6 +170,44 @@ Nothing is written to your disk until the questions are done, and
 you can stop at any point with Ctrl+C.
 
 INTRO
+
+cat <<INTRO2
+${RED}${BOLD}If you do not know what a question means, press Enter.${RESET}
+
+Anything shown inside [ ] is the default, and the defaults are chosen
+to work. You can hold Enter through most of this install.
+
+${RED}${BOLD}Only five answers really need you. They are marked with >> in red
+when they come up:${RESET}
+
+  1. ${BOLD}the sound card${RESET}
+     Which device to record from. Yours is usually the one that is
+     not called PCH, HDMI or Generic. A USB card often shows up
+     literally as Device, which looks like a placeholder but is real.
+
+  2. ${BOLD}the sample format${RESET}
+     S16_LE, S24_3LE or S32_LE. Higher is better, so take S32_LE if
+     your card offers it. The installer reads what the card supports
+     and suggests the best one it can see.
+
+  3. ${BOLD}audio_sampling_rate${RESET}
+     96000 unless you have a reason. This is the single most common
+     mistake in the SuperSID community: at 48000 you can only receive
+     transmitters below 24 kHz, so NSY at 45.9 kHz is invisible and
+     SuperSID refuses to start if you list it.
+
+  4. ${BOLD}latitude and longitude${RESET}
+     Looked up from your IP, which is right to the city at best.
+     Check it. Right click your antenna in Google Maps: latitude is
+     the first number, longitude the second.
+
+  5. ${BOLD}the UTC offset${RESET}
+     Taken from your machine's clock. Correct it if the machine is
+     set to the wrong zone.
+
+Everything else can be Enter.
+
+INTRO2
 read -r -p "Press Enter to start > " _
 
 
@@ -415,8 +471,11 @@ if [ -z "$LATITUDE" ]; then
     echo ""
 fi
 
+attention "check these against where your antenna actually is"
 LATITUDE=$(ask_needed "Latitude, north is positive" "$LATITUDE")
 LONGITUDE=$(ask_needed "Longitude, east is positive" "$LONGITUDE")
+
+attention "check this matches your machine's clock"
 UTC_OFFSET=$(ask_needed "UTC offset" "$UTC_OFFSET")
 TIME_ZONE=$(ask_needed "Time zone name" "$TIME_ZONE")
 
@@ -515,6 +574,7 @@ else
     echo "Start with a plughw entry."
     echo ""
 
+    attention "pick your external card, not PCH or HDMI or Generic"
     while [ -z "$AUDIO_DEVICE" ]; do
         CHOICE=$(ask "Device (type a number, or m)" "1")
         if [ "$CHOICE" = "m" ] || [ "$CHOICE" = "M" ]; then
@@ -560,6 +620,7 @@ fi
 
 echo ""
 
+attention "96000 unless you know you want otherwise, this is the common mistake"
 while true; do
     SAMPLING_RATE=$(ask "audio_sampling_rate, 48000 or 96000 or 192000" "$SUGGESTED_RATE")
     if is_number "$SAMPLING_RATE" && [ "$SAMPLING_RATE" -ge 8000 ]; then
@@ -568,6 +629,7 @@ while true; do
     echo "  That is not a usable rate. Try 48000, 96000 or 192000."
 done
 
+attention "higher is better, take S32_LE if the card above lists it"
 while true; do
     AUDIO_FORMAT=$(ask "Format, S16_LE or S24_3LE or S32_LE" "$SUGGESTED_FORMAT")
     case "$AUDIO_FORMAT" in
