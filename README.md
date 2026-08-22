@@ -10,7 +10,7 @@ it up. I did not write SuperSID, I do not maintain it, and all the credit for it
 goes there.
 
 ```bash
-cd /Downloads
+cd ~/Downloads
 git clone https://github.com/sarialameer/supersid-easy-install.git
 cd supersid-easy-install
 chmod +x install_supersid.sh
