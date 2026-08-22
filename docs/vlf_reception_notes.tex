@@ -1,0 +1,131 @@
+% vlf_reception_notes.tex
+%
+% A short supplement for the docs/ folder of a SuperSID station.
+% Build with:  pdflatex vlf_reception_notes.tex
+% Twice, if you want the references resolved.
+
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{natbib}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
+
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+
+\title{VLF reception, station geometry and hourly filtering}
+\author{Notes for a SuperSID monitoring station}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\section{Induced voltage in the loop antenna}
+
+A vertically polarized wave in the waveguide carries a horizontal magnetic
+field that is perpendicular to its direction of travel \citep{loudet2013}. The
+voltage induced in the loop is:
+
+\begin{equation}
+     \left [\frac{V_{\mathrm{rms}}}{\mathrm{V}} \right ]= 2\pi \left[ \frac{f}{\mathrm{Hz}} \right] N \left[ \frac{A_{\mathrm{eff}}}{\mathrm{m}^2} \right] \left[ \frac{B}{\mathrm{T}} \right] \cos\theta
+    \label{eq:faraday}
+\end{equation}
+
+where:
+\begin{description}[itemsep=2pt,topsep=2pt]
+    \item[$-$ $V_{\mathrm{rms}}$] is the root mean square voltage across the loop.
+    \item[$-$ $f$] is the transmitter frequency.
+    \item[$-$ $N$] is the number of turns in the loop.
+    \item[$-$ $A_{\mathrm{eff}}$] is the effective area enclosed by one turn.
+    \item[$-$ $B$] is the magnetic flux density of the arriving wave.
+    \item[$-$ $\theta$] is the angle between the loop axis and the direction to
+        the transmitter, so the response falls to zero when the loop faces it
+        edge on.
+\end{description}
+
+The $\cos\theta$ term is why the bearing to each transmitter matters when the
+antenna is put up, and the two sections below are how that bearing and the path
+length are worked out.
+
+\section{Forward azimuth to a transmitter}
+
+\begin{equation}
+    \left [\frac{\theta}{\mathrm{rad}}\right] = \arctan \left( \frac{\sin(\Delta\lambda)}{\cos(\phi_1)\tan(\phi_2) - \sin(\phi_1)\cos(\Delta\lambda)} \right)
+    \label{eq:azimuth}
+\end{equation}
+
+where:
+\begin{description}[itemsep=2pt,topsep=2pt]
+    \item[$-$ $\theta$] is the forward azimuth in radians.
+    \item[$-$ $\phi_1$] is the latitude of the starting point.
+    \item[$-$ $\phi_2$] is the latitude of the destination point.
+    \item[$-$ $\Delta\lambda$] is the difference in longitude between the two points.
+\end{description}
+
+\section{Great circle distance}
+
+{\small
+\begin{equation}
+    \left [\frac{d}{\mathrm{km}} \right]= \left[ \frac{R_{E}}{\mathrm{km}} \right] \arccos\big(\sin\phi_{1}\sin\phi_{2} + \cos\phi_{1}\cos\phi_{2}\cos(\lambda_{2}-\lambda_{1})\big)
+    \label{eq:gc}
+\end{equation}
+}
+
+where:
+\begin{description}[itemsep=2pt,topsep=2pt]
+    \item[$-$ $d$] is the Great Circle distance.
+    \item[$-$ $R_{E}$] is the mean radius of the Earth ($\approx 6371 \, \mathrm{km}$).
+    \item[$-$ $\phi_{1}, \phi_{2}$] are the latitudes of the two points.
+    \item[$-$ $\lambda_{1}, \lambda_{2}$] are the longitudes of the two points.
+\end{description}
+
+Equations~\ref{eq:azimuth} and~\ref{eq:gc} are what \texttt{vlf\_transit.py}
+evaluates for every transmitter in its table, which is how the installer can
+offer the ten or twenty nearest ones and how \texttt{vlf\_table.pdf} lists a
+bearing and a distance for each.
+
+\section{Why the hourly figure says BEMA was applied here}
+
+The plot label reads \texttt{BEMA wing 6 (applied here, the csv itself is raw)}
+because the smoothing seen in the figure is performed by the plotting script,
+not by SuperSID. Although \texttt{log\_type} may be set to \texttt{filtered} in
+\texttt{supersid.cfg}, that setting governs only the files written at the end of
+each UTC day. The hourly dump produced by \texttt{hourly\_save} is written with
+\texttt{log\_type='raw'} hardcoded in \texttt{supersid.py}, so the values in
+\texttt{hourly\_current\_buffers.*.csv} are exactly as captured from the sound
+card, and the file's own header confirms this with the line
+\texttt{\# LogType = raw}.
+
+To make the hourly figure comparable with the finished daily record, the script
+reproduces SuperSID's BEMA filter (\texttt{SidFile.filter\_buffer}) on the data
+before drawing: for each sample it takes the lowest value within a window of
+$2 \times \mathit{bema\_wing}$ points, then applies a single moving average of
+$2 \times \mathit{bema\_wing} + 1$ points over those minima. With the default
+wing of 6 this spans roughly one minute at a five second log interval. Taking
+the minimum first causes the curve to follow the quiet background level, so a
+sudden ionospheric disturbance stands out as a departure from that baseline
+rather than being averaged away. Where a file already carries
+\texttt{LogType = filtered}, the script detects this from the header and applies
+nothing further, and the label changes accordingly.
+
+\subsection*{Shorter version, for use as a figure caption}
+
+Signal from the hourly buffer, which SuperSID writes unfiltered regardless of
+the \texttt{log\_type} setting. BEMA (wing 6: rolling minimum over 12 samples,
+then a 13 sample moving average) is applied by the plotting script to match the
+filtering used in the daily files.
+
+\begin{thebibliography}{9}
+\bibitem[Loudet(2013)]{loudet2013}
+Loudet, L. (2013).
+\newblock \emph{SID monitoring station}.
+\newblock \url{https://sidstation.loudet.org/home-en.xhtml}
+\end{thebibliography}
+
+\end{document}

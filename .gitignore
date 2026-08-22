@@ -1,0 +1,31 @@
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# latex build files, the pdf itself is committed
+docs/*.aux
+docs/*.log
+docs/*.out
+docs/*.toc
+docs/*.bbl
+docs/*.blg
+docs/*.synctex.gz
+docs/build*.log
+
+# station output, do not commit your own data
+Data/
+output/
+hourly_output/
+*.csv
+!docs/*.csv
+vlf_table.*
+.goes_retry.json
+
+# editors and os
+.vscode/
+.idea/
+*.swp
+.DS_Store
