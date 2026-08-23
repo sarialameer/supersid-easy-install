@@ -53,7 +53,7 @@ OS, Pop!\_OS, Zorin, MX Linux and the rest.
 
 ## About the code and where credit belongs
 
-I built this with a lot of help from AI. I do not claim to have this much
+I built this with a lot of help from AI "BASH". I do not claim to have this much
 knowledge on my own, and I am not presenting it as my own work. The parts worth
 having, SuperSID itself, are somebody else's:
 
